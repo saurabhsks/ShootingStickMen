@@ -4,6 +4,7 @@ import * as THREE from "three";
 
 export const useGUI = (
     cylinderRef: React.RefObject<THREE.Mesh | null>,
+    boxRef: React.RefObject<THREE.Mesh | null>,
     camera: THREE.Camera
 ) => {
     useEffect(() => {
@@ -28,6 +29,16 @@ export const useGUI = (
         cylinderFolder.addColor({ color: "#ff0000" }, "color").onChange((value) => {
             (cylinderRef.current!.material as THREE.MeshStandardMaterial).color = new THREE.Color(value);
         });
+
+        if (!boxRef.current) return;
+
+        const boxFolder = gui.addFolder("Box");
+        boxFolder.add(boxRef.current.position, "x", -5, 5, 0.1);
+        boxFolder.add(boxRef.current.position, "y", -5, 5, 0.1);
+        boxFolder.add(boxRef.current.position, "z", -50, 5, 0.1);
+        boxFolder.add(boxRef.current.rotation, "x", 0, Math.PI * 2, 0.1);
+        boxFolder.add(boxRef.current.rotation, "y", 0, Math.PI * 2, 0.1);
+        boxFolder.add(boxRef.current.rotation, "z", 0, Math.PI * 2, 0.1);
 
         // Camera Controls
         const cameraFolder = gui.addFolder("Camera");

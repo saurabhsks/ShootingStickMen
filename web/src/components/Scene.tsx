@@ -9,7 +9,7 @@ const SceneObjects: React.FC = () => {
     const boxRef = useRef<THREE.Mesh | null>(null);
     const { camera } = useThree();
 
-    useGUI(cylinderRef, camera);
+    useGUI(cylinderRef, boxRef, camera);
 
     const manTexture = useLoader(THREE.TextureLoader, "/images/man.jpeg");
 
