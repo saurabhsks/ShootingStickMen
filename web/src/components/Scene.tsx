@@ -1,5 +1,5 @@
-import React, { useRef } from "react";
-import { Canvas, useLoader, useThree } from "@react-three/fiber";
+import React, { useRef, useEffect } from "react";
+import { Canvas, useLoader, useThree, useFrame } from "@react-three/fiber";
 import { Environment, Cylinder, Box } from "@react-three/drei";
 import * as THREE from "three";
 import { useGUI } from "./GUI";
@@ -7,13 +7,48 @@ import { useMouseFollow } from "../hooks/mousefollow";
 
 const SceneObjects: React.FC = () => {
     const cylinderRef = useRef<THREE.Mesh | null>(null);
-    const boxRef = useRef<THREE.Mesh | null>(null);
+    const centerBoxRef = useRef<THREE.Mesh | null>(null);
+    const leftBoxRef = useRef<THREE.Mesh | null>(null);
+    const rightBoxRef = useRef<THREE.Mesh | null>(null);
     const { camera } = useThree();
 
-    useGUI(cylinderRef, boxRef, camera);
-    useMouseFollow(cylinderRef, camera); 
+    useGUI(cylinderRef, centerBoxRef, camera);
+    useMouseFollow(cylinderRef, camera);
 
     const manTexture = useLoader(THREE.TextureLoader, "/images/man.jpeg");
+
+    // Animation logic
+    useFrame((state, delta) => {
+        // Center man movement
+        if (centerBoxRef.current) {
+            centerBoxRef.current.position.z += delta * 3; // Slower speed
+            if (centerBoxRef.current.position.z >= 5) { // Hide when past camera
+                centerBoxRef.current.visible = false;
+            }
+        }
+
+        // Left man movement
+        if (leftBoxRef.current) {
+            // Move diagonally towards center
+            leftBoxRef.current.position.z += delta * 3;
+            leftBoxRef.current.position.x += delta * 2;
+            
+            if (leftBoxRef.current.position.z >= 5) {
+                leftBoxRef.current.visible = false;
+            }
+        }
+
+        // Right man movement
+        if (rightBoxRef.current) {
+            // Move diagonally towards center
+            rightBoxRef.current.position.z += delta * 3;
+            rightBoxRef.current.position.x -= delta * 2;
+            
+            if (rightBoxRef.current.position.z >= 5) {
+                rightBoxRef.current.visible = false;
+            }
+        }
+    });
 
     return (
         <>
@@ -30,13 +65,37 @@ const SceneObjects: React.FC = () => {
                 <meshStandardMaterial color="#5f5959" />
             </Cylinder>
 
-            {/* Man (Cuboid) */}
+            {/* Center Man */}
             <Box 
-                ref={boxRef}
-                args={[1.5, 4, 0.5]} // Width, Height, Depth
-                position={[0, 0, -15]} // Positioning the cuboid in front of the gun
+                ref={centerBoxRef}
+                args={[1.5, 4, 0.5]}
+                position={[0, 0, -15]}
             >
-                <meshStandardMaterial map={manTexture} />
+                <meshStandardMaterial 
+                    map={manTexture} 
+                />
+            </Box>
+
+            {/* Left Man */}
+            <Box 
+                ref={leftBoxRef}
+                args={[1.5, 4, 0.5]}
+                position={[-10, 0, -15]}
+            >
+                <meshStandardMaterial 
+                    map={manTexture} 
+                />
+            </Box>
+
+            {/* Right Man */}
+            <Box 
+                ref={rightBoxRef}
+                args={[1.5, 4, 0.5]}
+                position={[10, 0, -15]}
+            >
+                <meshStandardMaterial 
+                    map={manTexture} 
+                />
             </Box>
 
             <Environment preset="park" background />
