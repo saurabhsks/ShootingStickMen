@@ -3,6 +3,7 @@ import { Canvas, useLoader, useThree, useFrame } from "@react-three/fiber";
 import { Environment, Cylinder, Box } from "@react-three/drei";
 import * as THREE from "three";
 import { useGUI } from "./GUI";
+import { useMouseFollow } from "../hooks/mousefollow";
 
 const SceneObjects: React.FC = () => {
     const cylinderRef = useRef<THREE.Mesh | null>(null);
@@ -12,6 +13,7 @@ const SceneObjects: React.FC = () => {
     const { camera } = useThree();
 
     useGUI(cylinderRef, centerBoxRef, camera);
+    useMouseFollow(cylinderRef, camera);
 
     const manTexture = useLoader(THREE.TextureLoader, "/images/man.jpeg");
 
