@@ -24,6 +24,7 @@ export const useMouseFollow = (cylinderRef: React.RefObject<THREE.Mesh | null>, 
             // Update cylinder position
             cylinderRef.current.position.x = position.x;
             cylinderRef.current.position.y = position.y;
+            cylinderRef.current.position.z = position.z + 2.5;
         };
 
         window.addEventListener("mousemove", handleMouseMove);

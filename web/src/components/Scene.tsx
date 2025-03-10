@@ -1,54 +1,35 @@
-import React, { useRef, useEffect } from "react";
-import { Canvas, useLoader, useThree, useFrame } from "@react-three/fiber";
+import React, { useRef, useState, useEffect } from "react";
+import { Canvas, useLoader, useThree } from "@react-three/fiber";
 import { Environment, Cylinder, Box } from "@react-three/drei";
 import * as THREE from "three";
-import { useGUI } from "./GUI";
 import { useMouseFollow } from "../hooks/mousefollow";
+import { View, Text, StyleSheet } from 'react-native';
 
-const SceneObjects: React.FC = () => {
+const SceneObjects: React.FC<{ onBoxClick: () => void }> = ({ onBoxClick }) => {
     const cylinderRef = useRef<THREE.Mesh | null>(null);
-    const centerBoxRef = useRef<THREE.Mesh | null>(null);
-    const leftBoxRef = useRef<THREE.Mesh | null>(null);
-    const rightBoxRef = useRef<THREE.Mesh | null>(null);
     const { camera } = useThree();
 
-    useGUI(cylinderRef, centerBoxRef, camera);
-    useMouseFollow(cylinderRef, camera);
-
+    const [boxes, setBoxes] = useState<{ id: number, position: [number, number, number] }[]>([]);
+    
     const manTexture = useLoader(THREE.TextureLoader, "/images/man.jpeg");
 
-    // Animation logic
-    useFrame((state, delta) => {
-        // Center man movement
-        if (centerBoxRef.current) {
-            centerBoxRef.current.position.z += delta * 3; // Slower speed
-            if (centerBoxRef.current.position.z >= 5) { // Hide when past camera
-                centerBoxRef.current.visible = false;
-            }
-        }
+    useMouseFollow(cylinderRef, camera);
 
-        // Left man movement
-        if (leftBoxRef.current) {
-            // Move diagonally towards center
-            leftBoxRef.current.position.z += delta * 3;
-            leftBoxRef.current.position.x += delta * 2;
-            
-            if (leftBoxRef.current.position.z >= 5) {
-                leftBoxRef.current.visible = false;
-            }
-        }
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setBoxes(prevBoxes => [
+                ...prevBoxes,
+                { id: Date.now(), position: [Math.random() * 20 - 10, 0, Math.random() * -10] }
+            ]);
+        }, 1000); // Spawn a new box every second
 
-        // Right man movement
-        if (rightBoxRef.current) {
-            // Move diagonally towards center
-            rightBoxRef.current.position.z += delta * 3;
-            rightBoxRef.current.position.x -= delta * 2;
-            
-            if (rightBoxRef.current.position.z >= 5) {
-                rightBoxRef.current.visible = false;
-            }
-        }
-    });
+        return () => clearInterval(interval);
+    }, []);
+
+    const handleBoxClick = (id: number) => {
+        setBoxes(prevBoxes => prevBoxes.filter(box => box.id !== id));
+        onBoxClick();
+    };
 
     return (
         <>
@@ -58,60 +39,59 @@ const SceneObjects: React.FC = () => {
             {/* Gun Cylinder */}
             <Cylinder 
                 ref={cylinderRef} 
-                args={[1, 1, 15, 32]} 
-                position={[0, -4, 0]}
+                args={[0.125, 0.125, 5, 32]} 
+                position={[0, -4, 1]}
                 rotation={[Math.PI / 2, 0, 0]}
             >
                 <meshStandardMaterial color="#5f5959" />
             </Cylinder>
 
-            {/* Center Man */}
-            <Box 
-                ref={centerBoxRef}
-                args={[1.5, 4, 0.5]}
-                position={[0, 0, -15]}
-            >
-                <meshStandardMaterial 
-                    map={manTexture} 
-                />
-            </Box>
-
-            {/* Left Man */}
-            <Box 
-                ref={leftBoxRef}
-                args={[1.5, 4, 0.5]}
-                position={[-10, 0, -15]}
-            >
-                <meshStandardMaterial 
-                    map={manTexture} 
-                />
-            </Box>
-
-            {/* Right Man */}
-            <Box 
-                ref={rightBoxRef}
-                args={[1.5, 4, 0.5]}
-                position={[10, 0, -15]}
-            >
-                <meshStandardMaterial 
-                    map={manTexture} 
-                />
-            </Box>
-
+            {boxes.map(box => (
+                <Box 
+                    key={box.id}
+                    args={[1.5, 4, 0.5]}
+                    position={box.position}
+                    onClick={() => handleBoxClick(box.id)}
+                >
+                    <meshStandardMaterial 
+                        map={manTexture} 
+                    />
+                </Box>
+            ))}
+            
             <Environment preset="park" background />
         </>
     );
 };
 
 const Scene: React.FC = () => {
+    const [score, setScore] = useState(0);
+
+    const incrementScore = () => {
+        setScore(prevScore => prevScore + 1);
+    };
+
     return (
-        <Canvas 
-            camera={{ position: [0, -2, 5], fov: 75 }}
-            style={{ width: "100vw", height: "100vh" }}
-        >
-            <SceneObjects />
-        </Canvas>
+        <>
+            <Canvas 
+                camera={{ position: [0, -2, 5], fov: 75 }}
+                style={{ width: "100vw", height: "100vh" }}
+            >
+                <SceneObjects onBoxClick={incrementScore} />
+            </Canvas>
+            <div style={styles.score}>Score: {score}</div>
+        </>
     );
 };
+
+const styles = StyleSheet.create({
+    score: {
+        position: 'absolute',
+        top: 10,
+        right: 10,
+        color: 'white',
+        fontSize: 24,
+    },
+});
 
 export default Scene;
