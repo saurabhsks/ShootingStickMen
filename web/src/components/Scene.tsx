@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
-import { Canvas, useLoader, useThree, useFrame } from "@react-three/fiber";
+import { Canvas, useLoader, useThree } from "@react-three/fiber";
 import { Environment, Cylinder, Box, Sphere } from "@react-three/drei";
 import * as THREE from "three";
 import { useMouseFollow } from "../hooks/mousefollow";
@@ -10,92 +10,21 @@ interface BloodParticle {
     velocity: [number, number, number];
 }
 
-interface Bullet {
-    id: number;
-    position: [number, number, number];
-    direction: [number, number, number];
-    createdAt: number;
-}
-
 const SceneObjects: React.FC<{ onBoxClick: () => void, onGameOver: () => void }> = ({ onBoxClick, onGameOver }) => {
     const cylinderRef = useRef<THREE.Mesh | null>(null);
     const { camera } = useThree();
 
     const [boxes, setBoxes] = useState<{ id: number, position: [number, number, number] }[]>([]);
     const [bloodParticles, setBloodParticles] = useState<BloodParticle[]>([]);
-    const [bullets, setBullets] = useState<Bullet[]>([]);
 
     const manTexture = useLoader(THREE.TextureLoader, "/images/man.jpeg");
 
     useMouseFollow(cylinderRef, camera);
 
-    // Handle bullet shooting
-    const handleShoot = () => {
-        if (cylinderRef.current) {
-            const gunTip = new THREE.Vector3(0, -4, 1);  // Gun position
-            const direction = new THREE.Vector3();
-
-            // Get direction from gun to mouse (using camera's forward direction)
-            direction.copy(camera.getWorldDirection(new THREE.Vector3()));
-            direction.normalize();
-
-            setBullets(prev => [...prev, {
-                id: Date.now(),
-                position: [gunTip.x, gunTip.y, gunTip.z],
-                direction: [direction.x, direction.y, direction.z],
-                createdAt: Date.now()
-            }]);
-        }
-    };
-
-    // Update bullets and check collisions
-    useFrame(() => {
-        setBullets(prevBullets => {
-            const currentTime = Date.now();
-            const bulletSpeed = 0.5;
-
-            return prevBullets
-                .map(bullet => {
-                    // Update bullet position
-                    const newPosition: [number, number, number] = [
-                        bullet.position[0] + bullet.direction[0] * bulletSpeed,
-                        bullet.position[1] + bullet.direction[1] * bulletSpeed,
-                        bullet.position[2] + bullet.direction[2] * bulletSpeed
-                    ];
-
-                    // Check collision with boxes
-                    const hitBox = boxes.find(box => {
-                        const distance = Math.sqrt(
-                            Math.pow(newPosition[0] - box.position[0], 2) +
-                            Math.pow(newPosition[1] - box.position[1], 2) +
-                            Math.pow(newPosition[2] - box.position[2], 2)
-                        );
-                        return distance < 2; // Collision threshold
-                    });
-
-                    if (hitBox) {
-                        // Handle hit
-                        handleBoxClick(hitBox.id, hitBox.position);
-                        return null; // Remove bullet
-                    }
-
-                    // Check if bullet is too old (2 seconds)
-                    if (currentTime - bullet.createdAt > 2000) {
-                        return null;
-                    }
-
-                    return {
-                        ...bullet,
-                        position: newPosition
-                    };
-                })
-                .filter(Boolean) as Bullet[];
-        });
-    });
-
     useEffect(() => {
         const interval = setInterval(() => {
             setBoxes(prevBoxes => {
+                // Check if adding a new box would exceed the limit
                 if (prevBoxes.length >= 10) {
                     onGameOver();
                     return prevBoxes;
@@ -107,18 +36,7 @@ const SceneObjects: React.FC<{ onBoxClick: () => void, onGameOver: () => void }>
             });
         }, 1000);
 
-        // Add click event listener for shooting
-        const handleClick = (event: MouseEvent) => {
-            if (!isGameOver) {
-                handleShoot();
-            }
-        };
-        window.addEventListener('click', handleClick);
-
-        return () => {
-            clearInterval(interval);
-            window.removeEventListener('click', handleClick);
-        };
+        return () => clearInterval(interval);
     }, [onGameOver]);
 
     // Update blood particles
@@ -194,21 +112,6 @@ const SceneObjects: React.FC<{ onBoxClick: () => void, onGameOver: () => void }>
             >
                 <meshStandardMaterial color="#5f5959" />
             </Cylinder>
-
-            {/* Bullets */}
-            {bullets.map(bullet => (
-                <Sphere
-                    key={bullet.id}
-                    args={[0.1]} // Small bullet size
-                    position={bullet.position}
-                >
-                    <meshStandardMaterial
-                        color="#FFD700"
-                        emissive="#FFA500"
-                        emissiveIntensity={0.5}
-                    />
-                </Sphere>
-            ))}
 
             {boxes.map(box => (
                 <Box
