@@ -10,12 +10,19 @@ interface BloodParticle {
     velocity: [number, number, number];
 }
 
+interface Bullet {
+    id: number;
+    position: [number, number, number];
+    velocity: [number, number, number];
+}
+
 const SceneObjects: React.FC<{ onBoxClick: () => void, onGameOver: () => void }> = ({ onBoxClick, onGameOver }) => {
     const cylinderRef = useRef<THREE.Mesh | null>(null);
     const { camera } = useThree();
 
     const [boxes, setBoxes] = useState<{ id: number, position: [number, number, number] }[]>([]);
     const [bloodParticles, setBloodParticles] = useState<BloodParticle[]>([]);
+    const [bullets, setBullets] = useState<Bullet[]>([]);
 
     const manTexture = useLoader(THREE.TextureLoader, "/images/man.jpeg");
 
@@ -62,6 +69,20 @@ const SceneObjects: React.FC<{ onBoxClick: () => void, onGameOver: () => void }>
                     }))
                     .filter(particle => particle.position[1] > -10);
             });
+
+            setBullets(prevBullets => {
+                return prevBullets
+                    .map(bullet => ({
+                        ...bullet,
+                        position: [
+                            bullet.position[0] + bullet.velocity[0],
+                            bullet.position[1] + bullet.velocity[1],
+                            bullet.position[2] + bullet.velocity[2]
+                        ] as [number, number, number]
+                    }))
+                    .filter(bullet => bullet.position[2] > -10);
+            });
+
             animationFrameId = requestAnimationFrame(updateParticles);
         };
 
@@ -98,6 +119,17 @@ const SceneObjects: React.FC<{ onBoxClick: () => void, onGameOver: () => void }>
         onBoxClick();
     };
 
+    const shootBullet = () => {
+        if (cylinderRef.current) {
+            const position = cylinderRef.current.position.toArray() as [number, number, number];
+            const velocity = [0, 0, -1] as [number, number, number]; // Shoot forward
+            setBullets(prevBullets => [
+                ...prevBullets,
+                { id: Date.now(), position, velocity }
+            ]);
+        }
+    };
+
     return (
         <>
             <ambientLight intensity={0.5} />
@@ -109,6 +141,7 @@ const SceneObjects: React.FC<{ onBoxClick: () => void, onGameOver: () => void }>
                 args={[0.125, 0.125, 5, 32]}
                 position={[0, -4, 1]}
                 rotation={[Math.PI / 2, 0, 0]}
+                onClick={shootBullet}
             >
                 <meshStandardMaterial color="#5f5959" />
             </Cylinder>
@@ -141,6 +174,19 @@ const SceneObjects: React.FC<{ onBoxClick: () => void, onGameOver: () => void }>
                 </Sphere>
             ))}
 
+            {/* Bullets */}
+            {bullets.map(bullet => (
+                <Sphere
+                    key={bullet.id}
+                    args={[0.1]}
+                    position={bullet.position}
+                >
+                    <meshStandardMaterial
+                        color="#FFD700"
+                    />
+                </Sphere>
+            ))}
+
             <Environment preset="park" background />
         </>
     );
@@ -161,8 +207,6 @@ const Scene: React.FC = () => {
     };
 
     const restartGame = () => {
-        // setScore(0);
-        // setIsGameOver(false);
         window.location.reload();
     };
 
@@ -189,7 +233,6 @@ const Scene: React.FC = () => {
                     zIndex: 1000,
                     top: '0',
                     left: '0',
-                    // transform: 'translate(-50%, -50%)',
                     backgroundColor: 'rgba(0, 0, 0, 0.8)',
                     padding: '20px',
                     borderRadius: '10px',
