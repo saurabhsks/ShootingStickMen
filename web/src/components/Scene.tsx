@@ -31,7 +31,7 @@ const SceneObjects: React.FC<{ onBoxClick: () => void, onGameOver: () => void }>
     useEffect(() => {
         const interval = setInterval(() => {
             setBoxes(prevBoxes => {
-                // Check if adding a new box would exceed the limit
+                //   Check if adding a new box would exceed the limit
                 if (prevBoxes.length >= 10) {
                     onGameOver();
                     return prevBoxes;
